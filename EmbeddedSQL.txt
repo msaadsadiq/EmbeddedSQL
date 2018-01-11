@@ -1,0 +1,425 @@
+/*        
+ *  procdemo.pc
+ *
+ *  This program connects to ORACLE, declares and opens a cursor,
+ *  and performs the queries mentioned in the case study
+ *  displays the results, then closes the cursor.
+ */
+
+#include <stdio.h>
+#include <string.h>
+#include <sqlca.h>
+#include <stdlib.h>
+#include <sqlda.h>
+#include <sqlcpr.h>
+
+#define UNAME_LEN      20
+#define PWD_LEN        25
+
+typedef char asciiz[PWD_LEN];
+
+EXEC SQL TYPE asciiz IS CHARZ(PWD_LEN) REFERENCE;
+asciiz     username;
+asciiz     password;
+
+struct emp_info
+{
+    int ssn;
+    asciiz name;
+    int salary;
+    asciiz address;
+    asciiz phone;
+};
+
+struct del_plane
+{
+    int regNo;
+    asciiz modelNo;
+};
+
+struct upd_exp
+{
+    int ssn;
+    asciiz modelNo;
+    asciiz comments;
+};
+
+struct avg_sal
+{
+   int ssn;
+   asciiz name;
+   int salary;
+   asciiz address;
+   asciiz phone;
+};
+
+struct tech_models
+{
+  asciiz modelNo;
+  int capacity;
+  int weight;
+};
+
+struct total_experts
+{
+  asciiz modelNo;
+  int Experts;
+};
+
+struct test_12157
+{
+  int FAANo;
+  asciiz name;
+  int maxScore;
+};
+
+struct recent_med
+{
+  int unionMemNo;
+  asciiz Recent;
+};
+
+
+struct total_tests
+{
+  int ssn;
+  int Tests;
+};
+
+struct sep_dec
+{
+  asciiz name;
+  int regNo;
+  int FAANo;
+};
+
+void sql_error(msg)
+    char *msg;
+{
+    char err_msg[512];
+    size_t buf_len, msg_len;
+
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+
+    printf("\n%s\n", msg);
+
+/* Call sqlglm() to get the complete text of the
+ * error message.
+ */
+    buf_len = sizeof (err_msg);
+    sqlglm(err_msg, &buf_len, &msg_len);
+    printf("%.*s\n", msg_len, err_msg);
+
+    EXEC SQL ROLLBACK RELEASE;
+    exit(EXIT_FAILURE);
+}
+
+void main()
+{
+    struct del_plane *del_plane_ptr;
+    struct upd_exp *upd_exp_ptr;
+    struct emp_info *emp_rec_ptr;
+    struct avg_sal *avg_sal_ptr;
+    struct tech_models *tech_models_ptr;
+    struct total_experts *total_experts_ptr;
+    struct test_12157 *test_12157_ptr;
+    struct recent_med *recent_med_ptr;
+    struct total_tests *total_tests_ptr;
+    struct sep_dec *sep_dec_ptr;
+
+/* Allocate memory for emp_info struct. */
+    if ((emp_rec_ptr =
+        (struct emp_info *) malloc(sizeof(struct emp_info))) == 0)
+    {
+        fprintf(stderr, "Memory allocation error.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if ((del_plane_ptr =
+        (struct del_plane *) malloc(sizeof(struct del_plane))) == 0)
+    {
+        fprintf(stderr, "Memory allocation error.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if ((upd_exp_ptr =
+        (struct upd_exp *) malloc(sizeof(struct upd_exp))) == 0)
+    {
+        fprintf(stderr, "Memory allocation error.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if ((avg_sal_ptr =
+       (struct  avg_sal *) malloc(sizeof(struct avg_sal))) == 0)
+    {
+        fprintf(stderr, "Memory allocation error2.\n");
+        exit(EXIT_FAILURE);
+    }
+
+     if((tech_models_ptr =
+        (struct tech_models *) malloc(sizeof(struct tech_models))) == 0)
+     {
+        fprintf(stderr, "Memory allocation error3,\n");
+        exit(EXIT_FAILURE);
+     }
+
+     if((total_experts_ptr =
+        (struct total_experts *) malloc(sizeof(struct total_experts))) == 0)
+     {
+        fprintf(stderr, "Memory allocation error3,\n");
+        exit(EXIT_FAILURE);
+     }
+
+      if((test_12157_ptr =
+        (struct test_12157 *) malloc(sizeof(struct test_12157))) == 0)
+     {
+        fprintf(stderr, "Memory allocation error3,\n");
+        exit(EXIT_FAILURE);
+     }
+
+      if((recent_med_ptr =
+        (struct recent_med *) malloc(sizeof(struct recent_med))) == 0)
+     {
+        fprintf(stderr, "Memory allocation error3,\n");
+        exit(EXIT_FAILURE);
+     }
+
+      if((total_tests_ptr =
+        (struct total_tests *) malloc(sizeof(struct total_tests))) == 0)
+     {
+        fprintf(stderr, "Memory allocation error3,\n");
+        exit(EXIT_FAILURE);
+     }
+
+      if((sep_dec_ptr =
+        (struct sep_dec *) malloc(sizeof(struct sep_dec))) == 0)
+     {
+        fprintf(stderr, "Memory allocation error3,\n");
+        exit(EXIT_FAILURE);
+     }
+
+/* Connect to ORACLE. */
+    strcpy(username, "musa567");
+    strcpy(password, "sado1896");
+
+    EXEC SQL WHENEVER SQLERROR DO sql_error("ORACLE error--");
+
+    EXEC SQL CONNECT :username IDENTIFIED BY :password;
+    printf("\nConnected to ORACLE as user: %s\n", username);
+
+/* Declare the cursor. All static SQL explicit cursors
+ * contain SELECT commands. 'salespeople' is a SQL identifier,
+ * not a (C) host variable.
+ */
+    EXEC SQL DECLARE firstquery CURSOR FOR
+        SELECT ssn,name,salary,address,phone
+            FROM Technician;
+
+/* Open the cursor. */
+    EXEC SQL OPEN firstquery;
+
+    EXEC SQL DECLARE secondquery CURSOR FOR
+
+        SELECT regNo,modelNo
+        FROM Airplane;
+
+    EXEC SQL OPEN secondquery;
+
+    EXEC SQL DECLARE thirdquery CURSOR FOR
+
+        SELECT ssn,modelNo,comments
+        FROM TechnicianExpertise;
+
+    EXEC SQL OPEN thirdquery;
+
+    EXEC SQL DECLARE fourthquery CURSOR FOR
+
+        SELECT ssn,name,salary,address,phone
+        FROM Technician
+        WHERE salary >
+                        (SELECT AVG(salary)
+                         FROM Technician);
+
+    EXEC SQL OPEN fourthquery;
+
+    EXEC SQL DECLARE fifthquery CURSOR FOR
+
+        SELECT t.modelNo AS modelNo, m.capacity AS capacity, m.weight AS weight
+        FROM TechnicianExpertise t, AirplaneModel m
+        WHERE t.ssn=62 AND t.modelNo=m.modelNo;
+
+    EXEC SQL OPEN fifthquery;
+
+   EXEC SQL DECLARE sixthquery CURSOR FOR
+
+        SELECT modelNo, COUNT(ssn) AS Experts
+        FROM TechnicianExpertise
+        GROUP BY modelNo;
+
+    EXEC SQL OPEN sixthquery;
+
+   EXEC SQL DECLARE seventhquery CURSOR FOR
+
+        SELECT FAANo,name,maxScore
+        FROM TestType
+        WHERE FAANo IN
+                        (SELECT testNo
+                        FROM TestConducted
+                        WHERE regNo = 12157)
+        ORDER BY maxScore;
+
+    EXEC SQL OPEN seventhquery;
+
+    EXEC SQL DECLARE eighthquery CURSOR FOR
+
+       SELECT e.unionMemNo AS unionMemNo, MAX(c.examDate) AS Recent
+        FROM TrafficController c, Employee e
+        WHERE e.unionMemNo =
+                                (SELECT unionMemNo
+                                FROM Employee
+                                WHERE ssn = c.ssn)
+        GROUP BY e.unionMemNo;
+
+    EXEC SQL OPEN eighthquery;
+
+    EXEC SQL DECLARE ninthquery CURSOR FOR
+
+        SELECT ssn, COUNT(testNo) AS Tests
+        FROM TestConducted
+        WHERE regNo=12157
+        GROUP BY ssn;
+
+    EXEC SQL OPEN ninthquery;
+
+    EXEC SQL DECLARE tenthquery CURSOR FOR
+
+       SELECT t.name AS name, c.regNo AS regNo, c.testNo AS FAANo
+        FROM TestConducted c, Technician t
+        WHERE (c.testDate BETWEEN '01-Sep-2015' AND '31-Dec-2015')
+                 AND c.ssn=t.ssn;
+
+    EXEC SQL OPEN tenthquery;
+
+/* Get ready to print results. */
+    printf("\n\n  Recently added new Technician\n\n");
+    printf("ssn         Name                 salary    address       phone\n");
+    printf("-----   -------------         ----------  ------        ---------    \n");
+
+    EXEC SQL WHENEVER NOT FOUND DO break;
+
+    for (;;)
+    {
+        EXEC SQL FETCH firstquery INTO :emp_rec_ptr;
+        printf("%d \t %s %d %s %s\n", emp_rec_ptr->ssn,
+                emp_rec_ptr->name, emp_rec_ptr->salary,emp_rec_ptr->address,emp_rec_ptr->phone);
+    }
+
+        printf("\n\n Result after deleting existing Airplane \n\n");
+        printf(" regNo         Model No    \n");
+        printf("--------   --------------- \n");
+
+    for(;;)
+        {
+         EXEC SQL FETCH secondquery INTO:del_plane_ptr;
+         printf("%d \t %s \n", del_plane_ptr->regNo,del_plane_ptr->modelNo);
+        }
+
+        printf("\n\n Details of Tech. Expertise after update \n\n");
+        printf(" ssn      Model No         Comments       \n");
+        printf("------  -------------   ----------------- \n");
+
+    for(;;)
+        {
+         EXEC SQL FETCH thirdquery INTO:upd_exp_ptr;
+         printf("%d \t %s %s \n", upd_exp_ptr->ssn,upd_exp_ptr->modelNo,upd_exp_ptr->comments);
+        }
+
+        printf("\n\n Details of technicians whose salary is greater than the average \n\n");
+        printf(" ssn           name         salary           address            phone  \n");
+        printf("------   ---------------   ---------   ----------------------   ------ \n");
+
+    for(;;)
+        {
+         EXEC SQL FETCH fourthquery INTO:avg_sal_ptr;
+         printf("%d \t %s %d %s %s \n", avg_sal_ptr->ssn,avg_sal_ptr->name,avg_sal_ptr->salary,
+                               avg_sal_ptr->address,avg_sal_ptr->phone);
+        }
+
+        printf("\n\nModel No. Capacity and Weight of Technician 62 \n\n");
+        printf(" Model No.             Capacity    Weight   \n");
+        printf("-----------           ----------  ----------\n");
+
+     for(;;)
+        {
+         EXEC SQL FETCH fifthquery INTO:tech_models_ptr;
+         printf("%s %d \t %d\n",tech_models_ptr->modelNo,tech_models_ptr->capacity,tech_models_ptr->weight);
+        }
+
+        printf("\n\nTotal No. of Tech. Expert in each model \n\n");
+        printf(" Model No.     Experts  \n");
+        printf("-----------   ----------\n");
+
+     for(;;)
+        {
+         EXEC SQL FETCH sixthquery INTO:total_experts_ptr;
+         printf("%s %d\n",total_experts_ptr->modelNo,total_experts_ptr->Experts);
+        }
+
+        printf("\n\nTest details of Airplane with regNo 12157 \n\n");
+        printf(" FAA No.       Name            maxScore   \n");
+        printf("---------   ---------------  --------------\n");
+
+     for(;;)
+        {
+         EXEC SQL FETCH seventhquery INTO:test_12157_ptr;
+         printf("%d \t %s %d\n",test_12157_ptr->FAANo,test_12157_ptr->name,test_12157_ptr->maxScore);
+        }
+
+        printf("\n\nMost Recent Annual Exam and union no. \n\n");
+        printf(" Union No.     Recent Exam \n");
+        printf("-----------   -------------\n");
+
+     for(;;)
+        {
+         EXEC SQL FETCH eighthquery INTO:recent_med_ptr;
+         printf("%d \t\t %s\n",recent_med_ptr->unionMemNo,recent_med_ptr->Recent);
+        }
+
+
+        printf("\n\nTotal test done by each Tech for Airplane 12157 \n\n");
+        printf(" ssn       Tests    \n");
+        printf("-------  ---------- \n");
+
+     for(;;)
+        {
+         EXEC SQL FETCH ninthquery INTO:total_tests_ptr;
+         printf("%d \t\t %d\n",total_tests_ptr->ssn,total_tests_ptr->Tests);
+        }
+
+        printf("\n\nDetails of tests between Sep2015 and Dec2015\n\n");
+        printf(" Name                  Reg No.      FAA No   \n");
+        printf("-------              ----------  ----------\n");
+
+     for(;;)
+        {
+         EXEC SQL FETCH tenthquery INTO:sep_dec_ptr;
+         printf("%s %d \t %d \n",sep_dec_ptr->name,sep_dec_ptr->regNo,sep_dec_ptr->FAANo);
+        }
+
+/* Close the cursor. */
+    EXEC SQL CLOSE firstquery;
+    EXEC SQL CLOSE fourthquery;
+    EXEC SQL CLOSE fifthquery;
+    EXEC SQL CLOSE sixthquery;
+    EXEC SQL CLOSE seventhquery;
+    EXEC SQL CLOSE eighthquery;
+    EXEC SQL CLOSE ninthquery;
+    EXEC SQL CLOSE tenthquery;
+
+    printf("\nGOOD-BYE!!\n\n");
+
+    EXEC SQL COMMIT WORK RELEASE;
+    exit(EXIT_SUCCESS);
+}
+
+
